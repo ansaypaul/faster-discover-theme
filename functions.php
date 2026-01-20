@@ -184,3 +184,62 @@ add_action('wp_head', function() {
     </style>
     <?php
 });
+
+/**
+ * Récupère les articles les plus vus (via Koko Analytics)
+ * 
+ * @param int $limit Nombre d'articles à récupérer
+ * @param int $days Période en jours (7 = dernière semaine, 30 = dernier mois)
+ * @return array Posts objects
+ */
+function faster_get_most_viewed_posts($limit = 6, $days = 7) {
+    global $wpdb;
+    
+    // Vérifier si Koko Analytics est installé
+    if (!function_exists('koko_analytics')) {
+        // Fallback : derniers articles
+        return get_posts(array(
+            'posts_per_page' => $limit,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'post_type' => 'post',
+            'post_status' => 'publish',
+        ));
+    }
+    
+    // Table Koko Analytics
+    $table_name = $wpdb->prefix . 'koko_analytics_post_stats';
+    
+    // Date limite
+    $date_start = date('Y-m-d', strtotime("-{$days} days"));
+    
+    // Requête pour les posts les plus vus
+    $post_ids = $wpdb->get_col($wpdb->prepare("
+        SELECT p.id as post_id
+        FROM {$table_name} p
+        WHERE p.date >= %s
+        GROUP BY p.id
+        ORDER BY SUM(p.pageviews) DESC
+        LIMIT %d
+    ", $date_start, $limit));
+    
+    if (empty($post_ids)) {
+        // Fallback si pas de stats
+        return get_posts(array(
+            'posts_per_page' => $limit,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'post_type' => 'post',
+            'post_status' => 'publish',
+        ));
+    }
+    
+    // Récupérer les posts dans l'ordre des vues
+    return get_posts(array(
+        'post__in' => $post_ids,
+        'orderby' => 'post__in',
+        'posts_per_page' => $limit,
+        'post_type' => 'post',
+        'post_status' => 'publish',
+    ));
+}

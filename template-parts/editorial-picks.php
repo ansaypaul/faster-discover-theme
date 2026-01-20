@@ -8,15 +8,9 @@
 $title = get_query_var('editorial_title', 'Le top de la rédac');
 $articles = get_query_var('editorial_articles', array());
 
-// Si aucun article n'est fourni, récupérer les 6 derniers
+// Si aucun article n'est fourni, récupérer les plus vus (7 derniers jours)
 if (empty($articles)) {
-    $articles = get_posts(array(
-        'posts_per_page' => 6,
-        'orderby' => 'date',
-        'order' => 'DESC',
-        'post_type' => 'post',
-        'post_status' => 'publish',
-    ));
+    $articles = faster_get_most_viewed_posts(6, 7);
 }
 
 if (empty($articles)) {
