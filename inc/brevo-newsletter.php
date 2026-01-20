@@ -6,7 +6,7 @@
 
 // Configuration Brevo (à configurer dans Apparence > Config Thème)
 define('BREVO_API_KEY', get_option('faster_brevo_api_key', ''));
-define('BREVO_LIST_ID', get_option('faster_brevo_list_id', 2));
+define('BREVO_LIST_ID', (int) get_option('faster_brevo_list_id', 2));
 
 // Endpoint AJAX pour l'inscription
 add_action('wp_ajax_brevo_subscribe', 'faster_brevo_subscribe');
@@ -63,9 +63,16 @@ function faster_brevo_subscribe() {
         ));
     }
     
-    // Autre erreur
+    // Autre erreur - DEBUG: afficher le détail
+    $error_message = 'Une erreur est survenue. Veuillez réessayer.';
+    if (isset($body['message'])) {
+        $error_message .= ' (Brevo: ' . $body['message'] . ' - Code: ' . $status_code . ')';
+    } else {
+        $error_message .= ' (Code HTTP: ' . $status_code . ')';
+    }
+    
     wp_send_json_error(array(
-        'message' => 'Une erreur est survenue. Veuillez réessayer.'
+        'message' => $error_message
     ));
 }
 

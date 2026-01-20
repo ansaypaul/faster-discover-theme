@@ -7,6 +7,9 @@ get_header();
 
 // Catégories principales (configurables depuis Apparence > Config Thème)
 $main_categories = faster_get_homepage_categories();
+
+// Système de déduplication : tracker les articles déjà affichés
+$used_article_ids = array();
 ?>
 
 <div class="min-h-screen bg-gaming-dark">
@@ -21,7 +24,34 @@ $main_categories = faster_get_homepage_categories();
         </div>
 
         <!-- Hero Grid - À la une -->
-        <?php get_template_part('template-parts/hero-grid'); ?>
+        <?php 
+        // Récupérer les catégories autorisées pour le Hero
+        $hero_categories = get_option('faster_hero_categories', array());
+        
+        // Préparer les arguments de la requête
+        $hero_args = array(
+            'posts_per_page' => 6,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'post_type' => 'post',
+            'post_status' => 'publish',
+        );
+        
+        // Si des catégories sont sélectionnées, filtrer par ces catégories
+        if (!empty($hero_categories)) {
+            $hero_args['category_name'] = implode(',', $hero_categories);
+        }
+        
+        // Récupérer les articles pour le hero
+        $hero_posts = get_posts($hero_args);
+        set_query_var('hero_posts', $hero_posts);
+        get_template_part('template-parts/hero-grid');
+        
+        // Ajouter les IDs à la liste de déduplication
+        foreach ($hero_posts as $post) {
+            $used_article_ids[] = $post->ID;
+        }
+        ?>
 
         <?php /* Ad Banner Placeholder - Caché temporairement
         <div class="bg-gaming-dark-card border-2 border-dashed border-gaming-dark-lighter rounded-lg p-4 sm:p-6 lg:p-8 text-center mb-6 sm:mb-8">
@@ -34,16 +64,22 @@ $main_categories = faster_get_homepage_categories();
             $cat = get_category_by_slug($category['slug']);
             if (!$cat) continue;
             
-            // Récupérer les articles de la catégorie
+            // Récupérer les articles de la catégorie (en excluant les déjà affichés)
             $category_posts = get_posts(array(
                 'category' => $cat->term_id,
                 'posts_per_page' => $category['posts_count'],
                 'orderby' => 'date',
                 'order' => 'DESC',
+                'post__not_in' => $used_article_ids, // Exclure les articles déjà utilisés
             ));
             
             // Afficher seulement si la catégorie a au moins 1 article
             if (empty($category_posts)) continue;
+            
+            // Ajouter les IDs de ces articles au tableau de déduplication
+            foreach ($category_posts as $post) {
+                $used_article_ids[] = $post->ID;
+            }
             
             // Choisir le template en fonction du layout configuré
             $layout_template = ($category['layout'] === 'platform') ? 'platform-section' : 'thematic-section';
@@ -61,7 +97,15 @@ $main_categories = faster_get_homepage_categories();
 
         <!-- Editorial Picks - Top de la rédac -->
         <?php
+        // Récupérer les articles les plus vus (SANS filtrage - TOP absolu)
+        $editorial_days = get_option('faster_editorial_picks_days', 7);
+        $editorial_articles = faster_get_most_viewed_posts(6, $editorial_days);
+        
+        // Note: On n'ajoute PAS les IDs à $used_article_ids
+        // Le top de la rédac doit toujours afficher les vrais tops, même s'ils sont ailleurs
+        
         set_query_var('editorial_title', 'Le top de la rédac');
+        set_query_var('editorial_articles', $editorial_articles);
         get_template_part('template-parts/editorial-picks');
         ?>
 

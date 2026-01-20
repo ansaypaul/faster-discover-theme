@@ -190,13 +190,18 @@ add_action('wp_head', function() {
  * 
  * @param int $limit Nombre d'articles à récupérer
  * @param int $days Période en jours (7 = dernière semaine, 30 = dernier mois)
+ * @param array $exclude_ids IDs des articles à exclure
  * @return array Posts objects
  */
-function faster_get_most_viewed_posts($limit = 6, $days = 7) {
+function faster_get_most_viewed_posts($limit = 6, $days = 7, $exclude_ids = array()) {
     global $wpdb;
     
-    // Vérifier si Koko Analytics est installé
-    if (!function_exists('koko_analytics')) {
+    // Table Koko Analytics
+    $table_name = $wpdb->prefix . 'koko_analytics_post_stats';
+    
+    // Vérifier si la table existe
+    $table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$table_name}'");
+    if (!$table_exists) {
         // Fallback : derniers articles
         return get_posts(array(
             'posts_per_page' => $limit,
@@ -204,21 +209,27 @@ function faster_get_most_viewed_posts($limit = 6, $days = 7) {
             'order' => 'DESC',
             'post_type' => 'post',
             'post_status' => 'publish',
+            'post__not_in' => $exclude_ids,
         ));
     }
-    
-    // Table Koko Analytics
-    $table_name = $wpdb->prefix . 'koko_analytics_post_stats';
     
     // Date limite
     $date_start = date('Y-m-d', strtotime("-{$days} days"));
     
+    // Préparer la clause d'exclusion
+    $exclude_clause = '';
+    if (!empty($exclude_ids)) {
+        $exclude_ids_str = implode(',', array_map('intval', $exclude_ids));
+        $exclude_clause = " AND p.post_id NOT IN ({$exclude_ids_str})";
+    }
+    
     // Requête pour les posts les plus vus
     $post_ids = $wpdb->get_col($wpdb->prepare("
-        SELECT p.id as post_id
+        SELECT p.post_id
         FROM {$table_name} p
         WHERE p.date >= %s
-        GROUP BY p.id
+        {$exclude_clause}
+        GROUP BY p.post_id
         ORDER BY SUM(p.pageviews) DESC
         LIMIT %d
     ", $date_start, $limit));
@@ -231,6 +242,7 @@ function faster_get_most_viewed_posts($limit = 6, $days = 7) {
             'order' => 'DESC',
             'post_type' => 'post',
             'post_status' => 'publish',
+            'post__not_in' => $exclude_ids,
         ));
     }
     
@@ -268,14 +280,15 @@ function faster_display_views_column($column_name, $post_id) {
     
     global $wpdb;
     
-    // Vérifier si Koko Analytics est installé
-    if (!function_exists('koko_analytics')) {
-        echo '<span style="color: #999;">—</span>';
-        return;
-    }
-    
     // Table Koko Analytics
     $table_name = $wpdb->prefix . 'koko_analytics_post_stats';
+    
+    // Vérifier si la table existe
+    $table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$table_name}'");
+    if (!$table_exists) {
+        echo '<span style="color: #999;" title="Koko Analytics non installé">—</span>';
+        return;
+    }
     
     // Stats des 7 derniers jours
     $date_start = date('Y-m-d', strtotime('-7 days'));
@@ -284,7 +297,7 @@ function faster_display_views_column($column_name, $post_id) {
     $views = $wpdb->get_var($wpdb->prepare("
         SELECT SUM(pageviews)
         FROM {$table_name}
-        WHERE id = %d
+        WHERE post_id = %d
         AND date >= %s
     ", $post_id, $date_start));
     
@@ -332,3 +345,381 @@ function faster_views_column_orderby($query) {
     // Pour l'instant, on laisse WordPress gérer l'ordre par défaut
 }
 add_action('pre_get_posts', 'faster_views_column_orderby');
+
+// ========================================================
+// FONCTIONS ADDITIONNELLES (depuis ancien thème)
+// ========================================================
+
+/**
+ * Colonne Vignette dans la liste des articles
+ */
+function faster_add_thumbnail_column($columns) {
+    $new_columns = array();
+    foreach ($columns as $key => $value) {
+        if ($key === 'title') {
+            $new_columns['thumbnail'] = '🖼️ Vignette';
+        }
+        $new_columns[$key] = $value;
+    }
+    return $new_columns;
+}
+add_filter('manage_posts_columns', 'faster_add_thumbnail_column');
+
+function faster_display_thumbnail_column($column, $post_id) {
+    if ($column === 'thumbnail') {
+        if (has_post_thumbnail($post_id)) {
+            echo get_the_post_thumbnail($post_id, array(50, 50));
+        } else {
+            echo '<span style="color: #999;">—</span>';
+        }
+    }
+}
+add_action('manage_posts_custom_column', 'faster_display_thumbnail_column', 10, 2);
+
+/**
+ * Colonne Auto (articles auto-générés)
+ */
+add_filter('manage_posts_columns', function($columns) {
+    $columns['article_auto'] = '🤖 Auto';
+    return $columns;
+});
+
+add_action('manage_posts_custom_column', function($column, $post_id) {
+    if ($column === 'article_auto') {
+        $auto = get_post_meta($post_id, '_article_auto', true);
+        if ($auto == 1) {
+            echo '✅ Oui';
+        } else {
+            echo '❌ Non';
+        }
+    }
+}, 10, 2);
+
+/**
+ * Filtres de nettoyage du contenu
+ */
+// Supprime les tirets cadratins bizarres
+function faster_filter_em_dash_content($content) {
+    $content = str_replace(' –', '', $content);
+    $content = str_replace('— ', '', $content);
+    $content = str_replace(' —', '', $content);
+    return $content;
+}
+add_filter('the_content', 'faster_filter_em_dash_content');
+
+// Supprime les espaces insécables bizarres
+add_filter('the_content', function ($content) {
+    if (empty($content)) return $content;
+    
+    $content = str_replace(
+        ["\xC2\xA0", "\xE2\x80\xAF", "\xE2\x80\x89", "\xE2\x80\xA8", "\xE2\x80\xA9", "&nbsp;"],
+        ' ',
+        $content
+    );
+    
+    return $content;
+}, 1);
+
+// Supprime les numéros de citations [1], [2], etc.
+add_filter('the_content', function ($content) {
+    return preg_replace('/\[\d+\]/', '', $content);
+});
+
+/**
+ * Meta Author dans le head (SEO)
+ */
+add_action('wp_head', function() {
+    if (!is_single() || is_admin()) return;
+    
+    $author_id = (int) get_post_field('post_author', get_queried_object_id());
+    $author_name = $author_id ? get_the_author_meta('display_name', $author_id) : '';
+    
+    if ($author_name) {
+        echo "\n<meta name=\"author\" content=\"" . esc_attr($author_name) . "\">\n";
+    }
+}, 1);
+
+/**
+ * Optimisation des images
+ */
+// Retirer les tailles trop grandes
+function faster_remove_large_image_sizes($sizes) {
+    unset($sizes['2048x2048']);
+    unset($sizes['1536x1536']);
+    return $sizes;
+}
+add_filter('intermediate_image_sizes_advanced', 'faster_remove_large_image_sizes');
+
+// Limiter la taille max d'upload à 1200px
+add_filter('big_image_size_threshold', function() {
+    return 1200;
+});
+
+/**
+ * Amazon - Détection et disclaimer
+ */
+function faster_has_amazon_link($content = null) {
+    if (is_null($content)) {
+        global $post;
+        if (!isset($post->post_content)) return false;
+        $content = $post->post_content;
+    }
+
+    $patterns = [
+        '/\[amazon/i',
+        '/https?:\/\/(www\.)?amazon\.[a-z]{2,3}\/dp\//i',
+        '/https?:\/\/amzn\.to\//i',
+    ];
+
+    foreach ($patterns as $pattern) {
+        if (preg_match($pattern, $content)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function faster_add_amazon_disclaimer($content) {
+    if (is_singular('post') && in_the_loop() && is_main_query()) {
+        if (faster_has_amazon_link($content)) {
+            $extra = '
+            <div class="amazon-disclaimer" style="font-size:0.9em; color:#777; margin-top:20px;">
+                <i>Cet article contient des liens affiliés Amazon. En tant que partenaire Amazon, ce site peut percevoir une commission sur les achats éligibles, sans coût supplémentaire pour vous.</i>
+            </div>
+            <div id="mediavine-settings" data-blocklist-all="1"></div>';
+            $content .= $extra;
+        }
+    }
+    return $content;
+}
+add_filter('the_content', 'faster_add_amazon_disclaimer');
+
+/**
+ * Mediavine - Blocker meta box
+ */
+function faster_add_mediavine_blocker_meta_box() {
+    add_meta_box(
+        'mediavine_blocker',
+        'Paramètres Publicité',
+        'faster_render_mediavine_blocker_meta_box',
+        'post',
+        'side',
+        'default'
+    );
+}
+add_action('add_meta_boxes', 'faster_add_mediavine_blocker_meta_box');
+
+function faster_render_mediavine_blocker_meta_box($post) {
+    wp_nonce_field('mediavine_blocker_nonce', 'mediavine_blocker_nonce_field');
+    
+    $block_ads = get_post_meta($post->ID, '_block_mediavine_ads', true);
+    ?>
+    <label style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" 
+               name="block_mediavine_ads" 
+               value="1" 
+               <?php checked($block_ads, '1'); ?>>
+        <span>Bloquer les publicités Mediavine sur cet article</span>
+    </label>
+    <p class="description" style="margin-top: 10px; font-size: 12px; color: #666;">
+        Active cette option pour désactiver toutes les publicités Mediavine sur cette page.
+    </p>
+    <?php
+}
+
+function faster_save_mediavine_blocker_meta_box($post_id) {
+    if (!isset($_POST['mediavine_blocker_nonce_field'])) return;
+    if (!wp_verify_nonce($_POST['mediavine_blocker_nonce_field'], 'mediavine_blocker_nonce')) return;
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+    if (!current_user_can('edit_post', $post_id)) return;
+    
+    if (isset($_POST['block_mediavine_ads'])) {
+        update_post_meta($post_id, '_block_mediavine_ads', '1');
+    } else {
+        delete_post_meta($post_id, '_block_mediavine_ads');
+    }
+}
+add_action('save_post', 'faster_save_mediavine_blocker_meta_box');
+
+function faster_add_mediavine_blocker_to_content($content) {
+    if (is_singular('post') && in_the_loop() && is_main_query()) {
+        $block_ads = get_post_meta(get_the_ID(), '_block_mediavine_ads', true);
+        
+        if ($block_ads == '1') {
+            $content .= '<div id="mediavine-settings" data-blocklist-all="1"></div>';
+        }
+    }
+    return $content;
+}
+add_filter('the_content', 'faster_add_mediavine_blocker_to_content');
+
+/**
+ * No-lazy sur les images "large" (première image LCP)
+ */
+add_filter('wp_get_attachment_image_attributes', function($attr, $attachment) {
+    if (!is_single() && !is_page()) {
+        return $attr;
+    }
+
+    if (empty($attr['class']) || strpos($attr['class'], 'size-large') === false) {
+        return $attr;
+    }
+
+    $attr['class'] .= ' no-lazy';
+    unset($attr['loading']);
+
+    return $attr;
+}, 10, 2);
+
+/**
+ * Bloc "En résumé" pour les articles
+ */
+function wog_get_article_resume_html() {
+    if (is_admin() || !is_singular('post')) {
+        return '';
+    }
+
+    $manual_resume = function_exists('get_field') ? (string) get_field('resume_edit') : '';
+    $auto_resume = (string) get_post_meta(get_the_ID(), '_article_resume', true);
+
+    $resume_raw = !empty(trim($manual_resume)) ? $manual_resume : $auto_resume;
+    if (empty(trim($resume_raw))) {
+        return '';
+    }
+
+    $allowed = array(
+        'p'  => array(),
+        'ul' => array(),
+        'ol' => array(),
+        'li' => array(),
+        'br' => array(),
+        'b'  => array(),
+        'strong' => array(),
+        'i'  => array(),
+        'em' => array(),
+        'a'  => array(
+            'href'   => true,
+            'title'  => true,
+            'rel'    => true,
+            'target' => true,
+        ),
+    );
+    $resume_html_safe = wp_kses($resume_raw, $allowed);
+
+    $items = array();
+    if (preg_match_all('/<li\b[^>]*>(.*?)<\/li>/is', $resume_html_safe, $m)) {
+        foreach ($m[1] as $li_html) {
+            $text = trim(wp_strip_all_tags($li_html));
+            if ($text !== '') {
+                $items[] = $text;
+            }
+        }
+    }
+
+    $intro = '';
+    $before_list = preg_split('/<(ul|ol)\b[^>]*>/i', $resume_html_safe, 2);
+    if (!empty($before_list[0])) {
+        $intro = trim(wp_strip_all_tags($before_list[0]));
+    }
+
+    if ($intro === '' && preg_match('/<p\b[^>]*>(.*?)<\/p>/is', $resume_html_safe, $pm)) {
+        $intro = trim(wp_strip_all_tags($pm[1]));
+    }
+
+    if ($intro === '') {
+        $intro = trim(wp_strip_all_tags($resume_html_safe));
+    }
+
+    if ($intro === '' && empty($items)) {
+        return '';
+    }
+
+    $items = array_values(array_filter($items));
+    $items = array_slice($items, 0, 6);
+
+    ob_start();
+    ?>
+    <div class="my-8" role="doc-abstract">
+        <details class="bg-gaming-dark-card rounded-xl p-6 my-6" open>
+            <summary class="text-xl font-bold text-gaming-accent cursor-pointer list-none mb-4 flex items-center">
+                <span class="text-2xl mr-2">📝</span>
+                En résumé
+            </summary>
+
+            <?php if ($intro !== '') : ?>
+                <p class="text-gray-300 text-base leading-relaxed mb-4"><?php echo esc_html($intro); ?></p>
+            <?php endif; ?>
+
+            <?php if (!empty($items)) : ?>
+                <ul class="list-none p-0 m-0 space-y-2">
+                    <?php foreach ($items as $item) : ?>
+                        <li class="text-gray-300 text-sm leading-relaxed pl-6 relative before:content-['✓'] before:absolute before:left-0 before:text-gaming-accent before:font-bold before:text-lg">
+                            <?php echo esc_html($item); ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+
+        </details>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+
+/**
+ * Google News Bar (désactivé par défaut)
+ */
+function faster_insert_gnews_bar_before_content($content) {
+    if (!is_singular('post') || !in_the_loop() || !is_main_query()) {
+        return $content;
+    }
+
+    $logo = esc_url(get_stylesheet_directory_uri() . '/img/gg_news.svg');
+    $gnews_url = 'https://news.google.com/publications/CAAqKQgKIiNDQklTRkFnTWFoQUtEbmR2Y214a2IyWm5aV1ZyTG1aeUtBQVAB?hl=fr&amp;gl=FR&amp;ceid=FR%3Afr';
+
+    $bar = '
+    <aside class="gn-promo-bar" role="note" aria-label="Suivez-nous sur Google News">
+        <span class="gn-promo-label">Suivez nous sur</span>
+        <a class="gn-promo-link" href="' . $gnews_url . '" target="_blank" rel="noopener nofollow">
+            Google News
+            <img class="gn-promo-logo" src="' . $logo . '" alt="Google News">
+        </a>
+    </aside>';
+
+    return $bar . $content;
+}
+// add_filter('the_content', 'faster_insert_gnews_bar_before_content'); // Désactivé
+
+// ========================================================
+// Google Tag Manager Integration
+// ========================================================
+
+/**
+ * GTM - Script dans le <head>
+ */
+function faster_gtm_head() {
+    ?>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-TFHT3GMP');</script>
+    <!-- End Google Tag Manager -->
+    <?php
+}
+add_action('wp_head', 'faster_gtm_head', 1);
+
+/**
+ * GTM - Noscript après <body>
+ */
+function faster_gtm_body() {
+    ?>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TFHT3GMP"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    <?php
+}
+add_action('wp_body_open', 'faster_gtm_body', 1);

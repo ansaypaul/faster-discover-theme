@@ -6,7 +6,7 @@ get_header();
 ?>
 
 <div class="container mx-auto px-4 py-8">
-    <div class="max-w-6xl mx-auto">
+    <div class="mx-auto">
         
         <!-- Search Header -->
         <header class="mb-8">
@@ -32,15 +32,30 @@ get_header();
             </div>
             
             <?php
-            // Pagination
-            the_posts_pagination(array(
-                'mid_size' => 1,      // 1 page de chaque côté
-                'end_size' => 1,      // 1 page au début et à la fin
-                'prev_text' => __('← Précédent', 'faster'),
-                'next_text' => __('Suivant →', 'faster'),
-                'class' => 'flex justify-center space-x-2 mt-12',
+            // Pagination WordPress stylisée
+            $big = 999999999;
+            $pagination = paginate_links(array(
+                'base' => str_replace($big, '%#%', esc_url(get_pagenum_link($big))),
+                'format' => '?paged=%#%',
+                'current' => max(1, get_query_var('paged')),
+                'total' => $GLOBALS['wp_query']->max_num_pages,
+                'type' => 'array',
+                'prev_text' => '← Précédent',
+                'next_text' => 'Suivant →',
+                'mid_size' => 1,
+                'end_size' => 1,
             ));
-            ?>
+
+            if ($pagination) : ?>
+                <nav class="flex flex-wrap justify-center items-center gap-2 mt-8" aria-label="Pagination">
+                    <?php foreach ($pagination as $page) : 
+                        $page = str_replace('current', 'bg-gaming-accent text-gaming-dark px-4 py-2 rounded-lg font-medium', $page);
+                        $page = str_replace('page-numbers', 'px-4 py-2 rounded-lg text-gray-300', $page);
+                        $page = str_replace('dots', 'px-2 py-2 text-gray-500', $page);
+                        echo $page; 
+                    endforeach; ?>
+                </nav>
+            <?php endif; ?>
             
         <?php else : ?>
             <div class="text-center py-12 bg-gaming-dark-card rounded-lg">

@@ -44,6 +44,12 @@ function faster_settings_init() {
     register_setting('faster_settings_group', 'faster_brevo_api_key');
     register_setting('faster_settings_group', 'faster_brevo_list_id');
     
+    // Editorial Picks (Top de la rédac)
+    register_setting('faster_settings_group', 'faster_editorial_picks_days');
+    
+    // Hero "À la une" - Catégories filtrées
+    register_setting('faster_settings_group', 'faster_hero_categories');
+    
     // Section Homepage
     add_settings_section(
         'faster_homepage_section',
@@ -58,6 +64,30 @@ function faster_settings_init() {
         'faster_homepage_categories_callback',
         'faster-settings',
         'faster_homepage_section'
+    );
+    
+    add_settings_field(
+        'faster_editorial_picks_days_field',
+        'Période "Top de la rédac"',
+        'faster_editorial_picks_days_callback',
+        'faster-settings',
+        'faster_homepage_section'
+    );
+    
+    // Section Hero "À la une"
+    add_settings_section(
+        'faster_hero_section',
+        'Section "À la une" (Hero)',
+        'faster_hero_section_callback',
+        'faster-settings'
+    );
+    
+    add_settings_field(
+        'faster_hero_categories_field',
+        'Catégories autorisées',
+        'faster_hero_categories_callback',
+        'faster-settings',
+        'faster_hero_section'
     );
     
     // Section Réseaux Sociaux
@@ -128,6 +158,55 @@ function faster_sanitize_categories_data($input) {
 // Description de la section Homepage
 function faster_homepage_section_callback() {
     echo '<p>Sélectionnez les catégories à afficher sur la homepage (dans l\'ordre d\'affichage).</p>';
+}
+
+// Callback pour la période "Top de la rédac"
+function faster_editorial_picks_days_callback() {
+    $value = get_option('faster_editorial_picks_days', 7);
+    ?>
+    <select name="faster_editorial_picks_days">
+        <option value="1" <?php selected($value, 1); ?>>Dernières 24 heures</option>
+        <option value="3" <?php selected($value, 3); ?>>3 derniers jours</option>
+        <option value="7" <?php selected($value, 7); ?>>7 derniers jours (semaine)</option>
+        <option value="15" <?php selected($value, 15); ?>>15 derniers jours</option>
+        <option value="30" <?php selected($value, 30); ?>>30 derniers jours (mois)</option>
+    </select>
+    <p class="description">Période pour calculer "Le top de la rédac" basé sur les vues Koko Analytics</p>
+    <?php
+}
+
+// Description de la section Hero
+function faster_hero_section_callback() {
+    echo '<p>Filtrez les catégories qui apparaissent dans la section "À la une" (Hero Grid).</p>';
+}
+
+// Callback pour les catégories du Hero
+function faster_hero_categories_callback() {
+    $selected_categories = get_option('faster_hero_categories', array());
+    // S'assurer que c'est bien un array
+    if (!is_array($selected_categories)) {
+        $selected_categories = array();
+    }
+    $all_categories = get_categories(array(
+        'hide_empty' => false,
+        'orderby' => 'name',
+        'order' => 'ASC'
+    ));
+    
+    echo '<div style="max-width: 600px;">';
+    echo '<p class="description">Cochez les catégories à afficher dans "À la une". Si aucune n\'est cochée, tous les articles seront affichés.</p>';
+    echo '<div style="border: 1px solid #ddd; padding: 15px; background: #fff; border-radius: 4px; max-height: 300px; overflow-y: auto; margin-top: 10px;">';
+    
+    foreach ($all_categories as $category) {
+        $checked = in_array($category->slug, $selected_categories) ? 'checked' : '';
+        echo '<label style="display: block; margin-bottom: 8px;">';
+        echo '<input type="checkbox" name="faster_hero_categories[]" value="' . esc_attr($category->slug) . '" ' . $checked . '> ';
+        echo '<strong>' . esc_html($category->name) . '</strong> <span style="color: #666;">(' . esc_html($category->slug) . ')</span>';
+        echo '</label>';
+    }
+    
+    echo '</div>';
+    echo '</div>';
 }
 
 // Description de la section Réseaux Sociaux

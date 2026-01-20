@@ -17,7 +17,7 @@
 <?php wp_body_open(); ?>
 
 <div class="sticky top-0 z-50">
-    <header class="bg-gaming-dark backdrop-blur-sm">
+    <header class="backdrop-blur-sm" style="background-color: #1a1a1a;">
         <div class="container mx-auto px-4">
             <div class="flex items-center gap-8 h-16">
                 <!-- Logo SVG -->

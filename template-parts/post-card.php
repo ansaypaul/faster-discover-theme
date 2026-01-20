@@ -11,9 +11,9 @@ $priority = get_query_var('priority', false);
 if ($layout === 'hero') : ?>
     <a 
         href="<?php the_permalink(); ?>"
-        class="group block relative overflow-hidden rounded-xl bg-gaming-dark-card min-h-[400px]"
+        class="group block relative overflow-hidden rounded-xl bg-gaming-dark-card sm:min-h-[350px] lg:min-h-[400px]"
     >
-        <div class="relative h-[400px] overflow-hidden">
+        <div class="relative aspect-video overflow-hidden">
             <?php if (has_post_thumbnail()) : 
                 the_post_thumbnail('faster-hero', array(
                     'class' => 'object-cover w-full h-full',
@@ -40,7 +40,7 @@ if ($layout === 'hero') : ?>
                 <h3 class="text-lg sm:text-xl lg:text-2xl font-bold text-white group-hover:text-gaming-accent transition-colors line-clamp-2">
                     <?php the_title(); ?>
                 </h3>
-                <div class="text-gray-300 text-sm line-clamp-2 block sm:block mb-2">
+                <div class="text-gray-300 text-sm line-clamp-2 hidden sm:block sm:mb-2">
                     <?php echo wp_trim_words(get_the_excerpt(), 15, '...'); ?>
                 </div>
                 <div class="flex items-center text-xs text-gray-400">
@@ -83,7 +83,7 @@ elseif ($layout === 'side') : ?>
                     </div>
                 <?php endif; ?>
             </div>
-            <div class="p-2 sm:p-3 flex-1 min-w-0">
+            <div class="p-2 sm:p-3 flex-1 min-w-0 flex flex-col justify-center">
                 <h4 class="text-white text-xs sm:text-sm font-semibold line-clamp-2 group-hover:text-gaming-accent transition-colors">
                     <?php the_title(); ?>
                 </h4>

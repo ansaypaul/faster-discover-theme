@@ -30,7 +30,7 @@ while (have_posts()) : the_post();
 
         <div class="flex flex-col lg:flex-row gap-8 mt-8">
             <!-- Main Content -->
-            <main class="flex-1 max-w-[956px] mx-auto px-4">
+            <main class="flex-1 mx-auto">
                 <article>
                     <!-- Title -->
                     <h1 class="text-3xl sm:text-4xl font-bold text-white mb-8">

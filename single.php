@@ -19,13 +19,27 @@ while (have_posts()) : the_post();
     $author_avatar = get_avatar_url(get_the_author_meta('ID'), array('size' => 48));
     $read_time = ceil(str_word_count(strip_tags(get_the_content())) / 200);
     
-    // Articles récents pour la sidebar
-    $latest_posts = get_posts(array(
-        'posts_per_page' => 6,
-        'orderby' => 'date',
-        'order' => 'DESC',
-        'post__not_in' => array($article_id),
-    ));
+    // Articles récents pour la sidebar (même catégorie)
+    $latest_posts = array();
+    if (!empty($categories)) {
+        $latest_posts = get_posts(array(
+            'posts_per_page' => 6,
+            'category' => $categories[0]->term_id,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'post__not_in' => array($article_id),
+        ));
+    }
+    
+    // Fallback : si pas assez d'articles dans la catégorie, prendre les derniers articles
+    if (count($latest_posts) < 3) {
+        $latest_posts = get_posts(array(
+            'posts_per_page' => 6,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'post__not_in' => array($article_id),
+        ));
+    }
     
     // Articles similaires (même catégorie)
     $related_articles = array();
@@ -121,6 +135,14 @@ while (have_posts()) : the_post();
                             </p>
                         <?php endif; ?>
                     </header>
+
+                    <!-- Bloc En Résumé -->
+                    <?php 
+                    $resume_html = wog_get_article_resume_html();
+                    if (!empty($resume_html)) {
+                        echo $resume_html;
+                    }
+                    ?>
 
                     <!-- Article Content -->
                     <div class="article-content">
