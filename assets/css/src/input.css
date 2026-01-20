@@ -1,0 +1,223 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Variables CSS (identiques à Next.js) */
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    /* Note: Pour optimiser, installez "OMGF" plugin pour auto-héberger Inter avec font-display: swap */
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Composants personnalisés (identiques à Next.js) */
+@layer components {
+  .hover-scale {
+    @apply transition-transform duration-200 hover:scale-105;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-gaming-primary to-gaming-secondary bg-clip-text text-transparent;
+  }
+  
+  .btn-primary {
+    @apply bg-gaming-primary text-white px-6 py-3 rounded-lg hover:opacity-90 transition;
+  }
+  
+  .btn-secondary {
+    @apply bg-gaming-secondary text-white px-6 py-3 rounded-lg hover:opacity-90 transition;
+  }
+
+  /* WordPress Menu Styles */
+  header nav ul {
+    @apply list-none m-0 p-0;
+  }
+  
+  header nav ul li {
+    @apply inline-block;
+  }
+  
+  header nav ul li a {
+    @apply text-gray-300 hover:text-white transition-colors duration-200 text-sm font-medium;
+  }
+  
+  /* Mobile Menu Styles */
+  #mobile-menu nav ul li {
+    @apply block;
+  }
+  
+  #mobile-menu nav ul li a {
+    @apply block text-gray-300 hover:text-white hover:bg-gaming-dark-lighter transition-colors duration-200 p-3 rounded-lg;
+  }
+
+  /* Category Menu - Minimal CSS */
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Footer Menu Links */
+  footer nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  footer nav ul li a {
+    color: rgb(156 163 175);
+    transition: color 150ms;
+  }
+  
+  footer nav ul li a:hover {
+    color: rgb(6 214 160);
+  }
+
+  /* Article Content - CSS pur (pas de @apply) */
+  .article-content {
+    color: rgb(209 213 219);
+    font-size: 1rem;
+    line-height: 1.625;
+  }
+
+  .article-content h2 {
+    color: rgb(6 214 160);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .article-content h2 { font-size: 1.875rem; }
+  }
+
+  .article-content h3 {
+    color: rgb(6 214 160);
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  @media (min-width: 640px) {
+    .article-content h3 { font-size: 1.5rem; }
+  }
+
+  .article-content h4 {
+    color: rgb(6 214 160);
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  @media (min-width: 640px) {
+    .article-content h4 { font-size: 1.25rem; }
+  }
+
+  .article-content p {
+    color: rgb(209 213 219);
+    margin-bottom: 1.5rem;
+    line-height: 1.625;
+  }
+
+  .article-content a {
+    color: rgb(96 165 250);
+    text-decoration: underline;
+    transition: color 150ms;
+  }
+
+  .article-content a:hover {
+    color: rgb(147 197 253);
+  }
+
+  .article-content strong {
+    color: rgb(255 255 255);
+    font-weight: 700;
+  }
+
+  .article-content ul {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+    margin: 1rem 0;
+  }
+
+  .article-content ul li + li {
+    margin-top: 0.5rem;
+  }
+
+  .article-content ol {
+    list-style-type: decimal;
+    padding-left: 1.5rem;
+    margin: 1rem 0;
+  }
+
+  .article-content ol li + li {
+    margin-top: 0.5rem;
+  }
+
+  .article-content li {
+    color: rgb(209 213 219);
+  }
+
+  .article-content img {
+    border-radius: 0.5rem;
+    margin: 2rem auto;
+    width: 100%;
+    height: auto;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+
+  .article-content figure {
+    width: 100%;
+    margin: 2rem 0;
+  }
+
+  .article-content blockquote {
+    border-left: 4px solid rgb(59 130 246);
+    padding-left: 1rem;
+    font-style: italic;
+    margin: 2rem 0;
+    color: rgb(156 163 175);
+  }
+
+  .article-content code {
+    color: rgb(96 165 250);
+    background-color: rgb(31 41 55);
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .article-content pre {
+    background-color: rgb(31 41 55);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin: 1.5rem 0;
+    overflow-x: auto;
+  }
+
+  .article-content pre code {
+    background-color: transparent;
+    padding: 0;
+  }
+
+  .article-content iframe {
+    width: 100%;
+    border-radius: 0.5rem;
+    margin: 2rem 0;
+    min-height: 400px;
+  }
+}

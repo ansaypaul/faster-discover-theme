@@ -1,0 +1,20 @@
+{
+  "name": "faster-theme",
+  "version": "1.0.0",
+  "description": "Thème WordPress ultra-performant avec Tailwind CSS",
+  "scripts": {
+    "dev": "tailwindcss -i ./assets/css/src/input.css -o ./assets/css/main.css --watch",
+    "build": "tailwindcss -i ./assets/css/src/input.css -o ./assets/css/main.css --minify"
+  },
+  "keywords": [
+    "wordpress",
+    "theme",
+    "tailwind",
+    "performance"
+  ],
+  "author": "Your Name",
+  "license": "GPL-2.0-or-later",
+  "devDependencies": {
+    "tailwindcss": "^3.4.1"
+  }
+}

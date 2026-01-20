@@ -1,0 +1,17 @@
+/*
+Theme Name: Faster Discover
+Theme URI: https://example.com
+Author: Your Name
+Author URI: https://example.com
+Description: Un thème WordPress ultra-rapide avec Tailwind CSS - Optimisé pour PageSpeed 92+
+Version: 1.0.0
+Requires at least: 6.0
+Tested up to: 6.4
+Requires PHP: 7.4
+License: GNU General Public License v2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: faster
+Tags: minimal, fast, performance, tailwind, lightweight, discover
+*/
+
+/* Tout le CSS est dans assets/css/main.css */
