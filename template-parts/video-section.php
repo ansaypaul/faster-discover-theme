@@ -104,9 +104,9 @@ $side_videos = array_slice($videos, 1, 3);
                         </div>
                     </div>
                     <div class="p-2 sm:p-3 flex-1 min-w-0">
-                        <h4 class="text-white text-xs sm:text-sm font-medium line-clamp-2 group-hover:text-gaming-accent transition-colors">
+                        <h3 class="text-white text-xs sm:text-sm font-medium line-clamp-2 group-hover:text-gaming-accent transition-colors">
                             <?php echo get_the_title($video); ?>
-                        </h4>
+                        </h3>
                         <p class="text-gray-400 text-xs mt-1"><?php echo get_the_date('', $video); ?></p>
                     </div>
                 </a>

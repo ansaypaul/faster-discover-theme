@@ -139,4 +139,75 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Exécuter le lazy loading
     lazyLoadYouTube();
+    
+    // ========================================================
+    // Barre de progression de lecture (articles uniquement)
+    // ========================================================
+    if (document.body.classList.contains('single-post')) {
+        initReadingProgress();
+    }
 });
+
+// ========================================================
+// Fonction: Barre de progression de lecture
+// ========================================================
+function initReadingProgress() {
+    // Respect prefers-reduced-motion
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        return;
+    }
+    
+    // Créer la barre
+    const progressBar = document.createElement('div');
+    progressBar.className = 'reading-progress';
+    document.body.appendChild(progressBar);
+    
+    // Calculer la progression
+    function updateProgress() {
+        // Récupérer l'élément <article>
+        const article = document.querySelector('article');
+        if (!article) return;
+        
+        // Position actuelle du scroll
+        const scrollTop = window.scrollY;
+        
+        // Position du début de l'article
+        const articleStart = article.offsetTop;
+        
+        // Hauteur totale de l'article
+        const articleHeight = article.offsetHeight;
+        
+        // Hauteur de la fenêtre
+        const windowHeight = window.innerHeight;
+        
+        // Calcul de la progression (0 à 100%)
+        const scrollableHeight = articleHeight - windowHeight + articleStart;
+        const scrolled = scrollTop - articleStart;
+        const progress = Math.min(Math.max((scrolled / scrollableHeight) * 100, 0), 100);
+        
+        // Mettre à jour la largeur de la barre
+        progressBar.style.width = progress + '%';
+        
+        // Afficher après 5% de scroll, masquer à 100%
+        if (progress >= 5 && progress < 100) {
+            progressBar.classList.add('visible');
+        } else {
+            progressBar.classList.remove('visible');
+        }
+    }
+    
+    // Écouteur de scroll (throttle pour les perfs)
+    let ticking = false;
+    window.addEventListener('scroll', function() {
+        if (!ticking) {
+            window.requestAnimationFrame(function() {
+                updateProgress();
+                ticking = false;
+            });
+            ticking = true;
+        }
+    });
+    
+    // Mise à jour initiale
+    updateProgress();
+}

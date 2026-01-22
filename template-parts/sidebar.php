@@ -15,7 +15,7 @@ $first_post = $posts[0];
 $other_posts = array_slice($posts, 1);
 ?>
 
-<aside class="w-full lg:w-[364px] space-y-8">
+<aside class="hidden lg:block lg:w-[364px] space-y-8">
     <!-- Section "À lire aussi" -->
     <div class="bg-gaming-dark-card rounded-lg p-4 shadow-lg">
         <div class="text-xl font-bold text-white mb-6">À lire aussi</div>

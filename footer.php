@@ -16,10 +16,10 @@
                         />
                     </a>
                 </div>
-                <p class="text-sm text-gray-300">
+                <p class="text-gray-300">
                     <?php 
                     $description = get_bloginfo('description');
-                    echo $description ? esc_html($description) : __('World of Geeks est un site d\'actualités et de culture geek qui s\'intéresse à l\'univers du gaming.', 'faster');
+                    echo $description ? esc_html($description) : __('WorldofGeek.fr est un site d\'actualités et de culture geek qui s\'intéresse à l\'univers du gaming.', 'faster');
                     ?>
                 </p>
             </div>

@@ -50,9 +50,11 @@ if (empty($articles)) {
                             #<?php echo ($index + 1); ?>
                         </span>
                     </div>
-                    <?php if (!empty($categories)) : ?>
+                    <?php if (!empty($categories)) : 
+                        $category_color = faster_get_category_color($categories[0]->slug);
+                    ?>
                         <div class="absolute top-2 right-2">
-                            <span class="bg-gaming-primary/80 text-white px-2 py-1 rounded text-xs font-medium">
+                            <span class="px-2 py-1 rounded text-xs font-medium text-white" style="background-color: <?php echo esc_attr(str_replace('rgb', 'rgba', str_replace(')', ', 0.8)', $category_color))); ?>;">
                                 <?php echo esc_html($categories[0]->name); ?>
                             </span>
                         </div>

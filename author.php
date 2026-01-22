@@ -36,8 +36,7 @@ $author_posts = new WP_Query(array(
 $total_pages = $author_posts->max_num_pages;
 ?>
 
-<div class="min-h-screen bg-gaming-dark">
-    <div class="container mx-auto px-4 py-8">
+<div class="container mx-auto px-4 py-8">
         
         <!-- Breadcrumbs -->
         <?php 
@@ -287,6 +286,5 @@ $total_pages = $author_posts->max_num_pages;
             ?>
         </div>
     </div>
-</div>
 
 <?php get_footer(); ?>

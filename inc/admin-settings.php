@@ -139,10 +139,18 @@ function faster_sanitize_categories_data($input) {
                 $posts_count = isset($cat['posts_count']) ? intval($cat['posts_count']) : 8;
                 $posts_count = max(1, min(20, $posts_count));
                 
+                // Valider la couleur (doit être dans la palette)
+                $color = isset($cat['color']) ? $cat['color'] : 'bleu';
+                $available_colors = array_keys(faster_get_category_colors());
+                if (!in_array($color, $available_colors)) {
+                    $color = 'bleu';
+                }
+                
                 $validated[] = array(
                     'slug' => sanitize_text_field($cat['slug']),
                     'layout' => $layout,
-                    'posts_count' => $posts_count
+                    'posts_count' => $posts_count,
+                    'color' => $color
                 );
             }
         }
@@ -274,21 +282,34 @@ function faster_homepage_categories_callback() {
         foreach ($selected_categories as $item) {
             if (is_string($item)) {
                 // Ancien format : juste un slug
-                $normalized_categories[$item] = 'thematic';
+                $normalized_categories[$item] = array(
+                    'slug' => $item,
+                    'layout' => 'thematic',
+                    'posts_count' => 8,
+                    'color' => 'bleu'
+                );
             } elseif (is_array($item) && isset($item['slug'])) {
-                // Nouveau format : ['slug' => 'xxx', 'layout' => 'xxx']
-                $normalized_categories[$item['slug']] = $item['layout'] ?? 'thematic';
+                // Nouveau format : ['slug' => 'xxx', 'layout' => 'xxx', 'posts_count' => X, 'color' => 'xxx']
+                $normalized_categories[$item['slug']] = array(
+                    'slug' => $item['slug'],
+                    'layout' => $item['layout'] ?? 'thematic',
+                    'posts_count' => $item['posts_count'] ?? 8,
+                    'color' => $item['color'] ?? 'bleu'
+                );
             }
         }
     }
     
     echo '<div class="faster-categories-wrapper">';
-    echo '<p class="description">Cochez les catégories à afficher sur la homepage. Utilisez le drag & drop pour les réordonner. Choisissez le layout et le nombre d\'articles pour chaque section.</p>';
+    echo '<p class="description">Cochez les catégories à afficher sur la homepage. Utilisez le drag & drop pour les réordonner. Choisissez le layout, le nombre d\'articles et la couleur du badge pour chaque section.</p>';
+    echo '<div style="display: grid; grid-template-columns: 30px 200px 180px 70px 120px; gap: 10px; padding: 10px; background: #f0f0f1; border-radius: 3px; margin-bottom: 10px; font-weight: 600; font-size: 12px;">';
+    echo '<span></span><span>Catégorie</span><span>Layout</span><span>Articles</span><span>Couleur</span>';
+    echo '</div>';
     echo '<ul id="faster-categories-list" class="faster-sortable-list">';
     
     // Afficher d'abord les catégories sélectionnées (dans l'ordre)
     if (!empty($normalized_categories)) {
-        foreach ($normalized_categories as $cat_slug => $layout) {
+        foreach ($normalized_categories as $cat_slug => $cat_data) {
             $category = get_category_by_slug($cat_slug);
             if ($category) {
                 echo '<li class="faster-category-item" data-slug="' . esc_attr($category->slug) . '">';
@@ -299,11 +320,25 @@ function faster_homepage_categories_callback() {
                 echo '<span class="category-slug">(' . esc_html($category->slug) . ')</span>';
                 echo '</label>';
                 echo '<select class="category-layout" data-slug="' . esc_attr($category->slug) . '">';
-                echo '<option value="thematic"' . selected($layout, 'thematic', false) . '>Grille (Thematic)</option>';
-                echo '<option value="platform"' . selected($layout, 'platform', false) . '>Scroll Mobile (Platform)</option>';
+                echo '<option value="thematic"' . selected($cat_data['layout'], 'thematic', false) . '>Grille (Thematic)</option>';
+                echo '<option value="platform"' . selected($cat_data['layout'], 'platform', false) . '>Scroll Mobile (Platform)</option>';
                 echo '</select>';
-                $posts_count = is_array($item) && isset($item['posts_count']) ? $item['posts_count'] : 8;
+                $posts_count = $cat_data['posts_count'];
                 echo '<input type="number" class="category-posts-count" data-slug="' . esc_attr($category->slug) . '" value="' . esc_attr($posts_count) . '" min="1" max="20" placeholder="8">';
+                
+                // Sélecteur de couleur
+                $cat_color = $cat_data['color'];
+                $colors = faster_get_category_colors();
+                $current_color_rgb = $colors[$cat_color]['color'];
+                echo '<div style="display: flex; align-items: center; gap: 8px;">';
+                echo '<select class="category-color" data-slug="' . esc_attr($category->slug) . '">';
+                foreach ($colors as $key => $color_data) {
+                    echo '<option value="' . esc_attr($key) . '" data-color="' . esc_attr($color_data['color']) . '"' . selected($cat_color, $key, false) . '>' . esc_html($color_data['name']) . '</option>';
+                }
+                echo '</select>';
+                echo '<span class="color-preview" style="background-color: ' . esc_attr($current_color_rgb) . ';"></span>';
+                echo '</div>';
+                
                 echo '</li>';
             }
         }
@@ -324,6 +359,20 @@ function faster_homepage_categories_callback() {
             echo '<option value="platform">Scroll Mobile (Platform)</option>';
             echo '</select>';
             echo '<input type="number" class="category-posts-count" data-slug="' . esc_attr($category->slug) . '" value="8" min="1" max="20" placeholder="8" disabled>';
+            
+            // Sélecteur de couleur (disabled)
+            $colors = faster_get_category_colors();
+            $default_color_rgb = $colors['bleu']['color'];
+            echo '<div style="display: flex; align-items: center; gap: 8px;">';
+            echo '<select class="category-color" data-slug="' . esc_attr($category->slug) . '" disabled>';
+            foreach ($colors as $key => $color_data) {
+                $selected = ($key === 'bleu') ? ' selected' : '';
+                echo '<option value="' . esc_attr($key) . '" data-color="' . esc_attr($color_data['color']) . '"' . $selected . '>' . esc_html($color_data['name']) . '</option>';
+            }
+            echo '</select>';
+            echo '<span class="color-preview" style="background-color: ' . esc_attr($default_color_rgb) . ';"></span>';
+            echo '</div>';
+            
             echo '</li>';
         }
     }
@@ -412,6 +461,30 @@ function faster_homepage_categories_callback() {
             color: #999;
             cursor: not-allowed;
         }
+        .faster-category-item .category-color {
+            padding: 5px 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            background: #fff;
+            font-size: 13px;
+            min-width: 120px;
+            font-weight: 600;
+        }
+        .faster-category-item .category-color:disabled {
+            background: #f5f5f5;
+            color: #999;
+            cursor: not-allowed;
+        }
+        .color-preview {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+            vertical-align: middle;
+            margin-left: 8px;
+        }
         .faster-category-item.ui-sortable-helper {
             background: #f0f0f1;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -429,18 +502,30 @@ function faster_homepage_categories_callback() {
             cursor: 'move'
         });
         
-        // Activer/désactiver le select de layout et le nombre d'articles quand on coche/décoche
+        // Activer/désactiver le select de layout, le nombre d'articles et la couleur quand on coche/décoche
         $('.category-checkbox').on('change', function() {
             const $item = $(this).closest('.faster-category-item');
             const $select = $item.find('.category-layout');
             const $postsCount = $item.find('.category-posts-count');
+            const $color = $item.find('.category-color');
             
             if ($(this).is(':checked')) {
                 $select.prop('disabled', false);
                 $postsCount.prop('disabled', false);
+                $color.prop('disabled', false);
             } else {
                 $select.prop('disabled', true);
                 $postsCount.prop('disabled', true);
+                $color.prop('disabled', true);
+            }
+        });
+        
+        // Mettre à jour la prévisualisation de couleur quand on change le select
+        $('.category-color').on('change', function() {
+            const $preview = $(this).closest('div').find('.color-preview');
+            const selectedColor = $(this).find('option:selected').data('color');
+            if (selectedColor && $preview.length) {
+                $preview.css('background-color', selectedColor);
             }
         });
         
@@ -458,11 +543,13 @@ function faster_homepage_categories_callback() {
                     const slug = $checkbox.data('slug');
                     const layout = $item.find('.category-layout').val();
                     const postsCount = parseInt($item.find('.category-posts-count').val()) || 8;
+                    const color = $item.find('.category-color').val() || 'bleu';
                     
                     categories.push({
                         slug: slug,
                         layout: layout,
-                        posts_count: postsCount
+                        posts_count: postsCount,
+                        color: color
                     });
                 }
             });

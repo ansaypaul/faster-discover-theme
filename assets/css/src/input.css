@@ -234,7 +234,12 @@
   .article-content iframe {
     width: 100%;
     border-radius: 0.5rem;
-    min-height: 400px;
+  }
+
+  @media (min-width: 768px) {
+    .article-content iframe {
+      min-height: 400px;
+    }
   }
 
   /* Inline Related Posts (plugin) */
@@ -318,5 +323,31 @@
 
   .article-content details .av {
     color: rgb(6 214 160); /* gaming-accent */
+  }
+
+  /* ========================================
+     Barre de progression de lecture
+     ======================================== */
+  .reading-progress {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 0%;
+    height: 2px;
+    background: rgb(6 214 160); /* gaming-accent */
+    z-index: 9999;
+    transition: width 0.1s ease-out, opacity 0.3s ease;
+    opacity: 0;
+  }
+
+  .reading-progress.visible {
+    opacity: 0.85;
+  }
+
+  /* Respect prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    .reading-progress {
+      transition: none;
+    }
   }
 }

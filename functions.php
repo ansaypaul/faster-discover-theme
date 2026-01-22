@@ -52,6 +52,15 @@ require_once get_template_directory() . '/inc/brevo-newsletter.php';
 // Author Custom Fields (Job + Social Networks)
 require_once get_template_directory() . '/inc/author-fields.php';
 
+// Category Colors (Couleurs des badges de catégories)
+require_once get_template_directory() . '/inc/category-colors.php';
+
+// Dossier Taxonomy (Regroupement thématique d'articles)
+require_once get_template_directory() . '/inc/dossier.php';
+
+// Inline Related Posts (Articles similaires automatiques)
+require_once get_template_directory() . '/inc/inline-related-posts.php';
+
 // 2. DÉSACTIVATION FEATURES WP INUTILES (Performance)
 
 // Emojis
@@ -223,14 +232,17 @@ function faster_get_most_viewed_posts($limit = 6, $days = 7, $exclude_ids = arra
         $exclude_clause = " AND p.post_id NOT IN ({$exclude_ids_str})";
     }
     
-    // Requête pour les posts les plus vus
+    // Requête pour les posts les plus vus (uniquement les posts publiés)
     $post_ids = $wpdb->get_col($wpdb->prepare("
-        SELECT p.post_id
-        FROM {$table_name} p
-        WHERE p.date >= %s
+        SELECT ka.post_id
+        FROM {$table_name} ka
+        INNER JOIN {$wpdb->posts} posts ON ka.post_id = posts.ID
+        WHERE ka.date >= %s
+        AND posts.post_status = 'publish'
+        AND posts.post_type = 'post'
         {$exclude_clause}
-        GROUP BY p.post_id
-        ORDER BY SUM(p.pageviews) DESC
+        GROUP BY ka.post_id
+        ORDER BY SUM(ka.pageviews) DESC
         LIMIT %d
     ", $date_start, $limit));
     
@@ -654,7 +666,7 @@ function wog_get_article_resume_html() {
             <?php if (!empty($items)) : ?>
                 <ul class="list-none p-0 m-0 space-y-2">
                     <?php foreach ($items as $item) : ?>
-                        <li class="text-gray-300 text-sm leading-relaxed pl-6 relative before:content-['✓'] before:absolute before:left-0 before:text-gaming-accent before:font-bold before:text-lg">
+                        <li class="text-gray-300 leading-relaxed pl-6 relative before:content-['✓'] before:absolute before:left-0 before:text-gaming-accent before:font-bold before:text-lg">
                             <?php echo esc_html($item); ?>
                         </li>
                     <?php endforeach; ?>
@@ -670,26 +682,32 @@ function wog_get_article_resume_html() {
 /**
  * Google News Bar (désactivé par défaut)
  */
-function faster_insert_gnews_bar_before_content($content) {
-    if (!is_singular('post') || !in_the_loop() || !is_main_query()) {
-        return $content;
-    }
-
-    $logo = esc_url(get_stylesheet_directory_uri() . '/img/gg_news.svg');
+// Fonction pour afficher la barre Google News (à appeler dans single.php après </article>)
+function faster_display_gnews_bar() {
     $gnews_url = 'https://news.google.com/publications/CAAqKQgKIiNDQklTRkFnTWFoQUtEbmR2Y214a2IyWm5aV1ZyTG1aeUtBQVAB?hl=fr&amp;gl=FR&amp;ceid=FR%3Afr';
-
-    $bar = '
-    <aside class="gn-promo-bar" role="note" aria-label="Suivez-nous sur Google News">
-        <span class="gn-promo-label">Suivez nous sur</span>
-        <a class="gn-promo-link" href="' . $gnews_url . '" target="_blank" rel="noopener nofollow">
-            Google News
-            <img class="gn-promo-logo" src="' . $logo . '" alt="Google News">
-        </a>
-    </aside>';
-
-    return $bar . $content;
-}
-// add_filter('the_content', 'faster_insert_gnews_bar_before_content'); // Désactivé
+    ?>
+    <a 
+        href="<?php echo esc_url($gnews_url); ?>" 
+        target="_blank" 
+        rel="noopener nofollow"
+        class="block mb-6 sm:mb-8 bg-gaming-dark-card hover:bg-gaming-dark-lighter rounded-lg border-l-4 border-gaming-accent p-4 sm:p-5 transition-colors group"
+    >
+        <div class="flex items-center justify-between gap-4">
+            <div class="flex-1">
+                <div class="text-gaming-accent text-base font-bold mb-2 uppercase tracking-wide">
+                🙂 Vous avez aimé cet article ?
+                </div>
+                <div class="text-white text-base font-medium">
+                Alors suivez WorldOfGeek sur Google Actualités pour retrouver nos prochains articles directement dans votre fil. C'est gratuit et ça mange pas de pain 🥖.
+                </div>
+            </div>
+            <svg class="w-5 h-5 text-gaming-accent group-hover:translate-x-1 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+        </div>
+    </a>
+    <?php
+} 
 
 // ========================================================
 // Google Tag Manager Integration
@@ -723,3 +741,178 @@ function faster_gtm_body() {
     <?php
 }
 add_action('wp_body_open', 'faster_gtm_body', 1);
+
+
+add_filter('the_content', function ($content) {
+  if (!is_singular('post')) return $content;
+
+  global $post;
+  if (!$post) return $content;
+
+  $title = get_the_title($post);
+  if (!geo_title_looks_like_list($title)) return $content;
+
+  // Ajoute des IDs aux H2 éligibles si absents (pour que les #anchors existent vraiment)
+  return geo_add_ids_to_h2($content);
+}, 20);
+
+add_action('wp_head', function () {
+  if (!is_singular('post')) return;
+
+  global $post;
+  if (!$post) return;
+
+  $title = get_the_title($post);
+  if (!geo_title_looks_like_list($title)) return;
+
+  // Important: on passe par the_content pour récupérer le HTML final (avec ids ajoutés)
+  $html = apply_filters('the_content', $post->post_content);
+
+  $items = geo_extract_h2_items_with_ids($html);
+  if (count($items) < 3) return;
+
+  $permalink = get_permalink($post);
+
+  $jsonLd = [
+    '@context' => 'https://schema.org',
+    '@type' => 'ItemList',
+    'name' => $title,
+    'url'  => $permalink,
+    'itemListOrder' => 'https://schema.org/ItemListUnordered',
+    'numberOfItems' => count($items),
+    'itemListElement' => array_map(function ($it, $idx) use ($permalink) {
+      $entry = [
+        '@type' => 'ListItem',
+        'position' => $idx + 1,
+        'name' => $it['name'],
+      ];
+
+      if (!empty($it['id'])) {
+        $entry['url'] = $permalink . '#' . $it['id'];
+      }
+
+      return $entry;
+    }, $items, array_keys($items)),
+  ];
+
+  echo "\n<script type=\"application/ld+json\">" .
+    wp_json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) .
+    "</script>\n";
+}, 99);
+
+/**
+ * Détection titre "Top/Sélection".
+ */
+function geo_title_looks_like_list(string $title): bool {
+  $t = mb_strtolower($title);
+
+  return (bool) preg_match(
+    '/\b(top\s*\d+|meilleur|meilleurs|sélection|selection|classement|comparatif|guide d\'achat|à venir|a venir|attendu|attendus|best)\b/u',
+    $t
+  );
+}
+
+/**
+ * Ignore les H2 qui ne sont pas des items.
+ */
+function geo_h2_is_excluded(string $text): bool {
+  return (bool) preg_match('/^(pourquoi|faq|questions|à retenir|en bref|bonus|sources)/iu', $text);
+}
+
+/**
+ * Ajoute des attributs id aux H2 éligibles si absents.
+ */
+function geo_add_ids_to_h2(string $html): string {
+  libxml_use_internal_errors(true);
+
+  $dom = new DOMDocument();
+  $dom->loadHTML('<?xml encoding="utf-8" ?>' . $html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+  $xpath = new DOMXPath($dom);
+
+  $h2s = $xpath->query('//h2');
+  if (!$h2s || $h2s->length === 0) return $html;
+
+  $used = [];
+
+  foreach ($h2s as $h2) {
+    $text = trim(preg_replace('/\s+/', ' ', $h2->textContent));
+    if ($text === '') continue;
+
+    // Nettoyage numérotation éventuelle
+    $clean = preg_replace('/^\s*(\d+[\.\)\-:]\s+)/u', '', $text);
+    $clean = trim($clean);
+
+    if ($clean === '' || geo_h2_is_excluded($clean)) continue;
+
+    // Si un id existe déjà, on le réserve (et on évite collision)
+    $existingId = '';
+    if ($h2->hasAttribute('id')) {
+      $existingId = trim($h2->getAttribute('id'));
+      if ($existingId !== '') {
+        $base = $existingId;
+        $final = $base;
+        $n = 2;
+        while (isset($used[$final])) {
+          $final = $base . '-' . $n;
+          $n++;
+        }
+        if ($final !== $existingId) {
+          $h2->setAttribute('id', $final);
+        }
+        $used[$final] = true;
+        continue;
+      }
+    }
+
+    // Génère un id depuis le titre H2
+    $base = sanitize_title($clean);
+    if ($base === '') continue;
+
+    $final = $base;
+    $n = 2;
+    while (isset($used[$final])) {
+      $final = $base . '-' . $n;
+      $n++;
+    }
+
+    $h2->setAttribute('id', $final);
+    $used[$final] = true;
+  }
+
+  return $dom->saveHTML();
+}
+
+/**
+ * Extrait les items (name + id) depuis les H2.
+ */
+function geo_extract_h2_items_with_ids(string $html): array {
+  libxml_use_internal_errors(true);
+
+  $dom = new DOMDocument();
+  $dom->loadHTML('<?xml encoding="utf-8" ?>' . $html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+  $xpath = new DOMXPath($dom);
+
+  $h2s = $xpath->query('//h2');
+  $items = [];
+  $seen = [];
+
+  foreach ($h2s as $h2) {
+    $text = trim(preg_replace('/\s+/', ' ', $h2->textContent));
+    if ($text === '') continue;
+
+    $text = preg_replace('/^\s*(\d+[\.\)\-:]\s+)/u', '', $text);
+    $text = trim($text);
+
+    if ($text === '' || geo_h2_is_excluded($text)) continue;
+
+    $name = mb_substr($text, 0, 120);
+    $key = mb_strtolower($name);
+    if (isset($seen[$key])) continue;
+    $seen[$key] = true;
+
+    $id = $h2->hasAttribute('id') ? trim($h2->getAttribute('id')) : '';
+    $items[] = ['name' => $name, 'id' => $id];
+  }
+
+  return $items;
+}

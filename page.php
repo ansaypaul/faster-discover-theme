@@ -16,8 +16,7 @@ while (have_posts()) : the_post();
     ));
 ?>
 
-<div class="min-h-screen bg-gaming-dark">
-    <div class="container mx-auto px-4 py-8">
+<div class="container mx-auto px-4 py-8">
         
         <!-- Breadcrumbs -->
         <?php 
@@ -99,7 +98,6 @@ while (have_posts()) : the_post();
             ?>
         </div>
     </div>
-</div>
 
 <?php 
 endwhile;

@@ -12,8 +12,7 @@ $main_categories = faster_get_homepage_categories();
 $used_article_ids = array();
 ?>
 
-<div class="min-h-screen bg-gaming-dark">
-    <div class="container mx-auto px-4 py-4 sm:py-6 lg:py-8">
+<div class="container mx-auto px-4 py-4 sm:py-6 lg:py-8">
         
         <!-- Synopsis / Welcome Section -->
         <div class="synopsis mb-6 sm:mb-8 text-sm sm:text-base">
@@ -150,7 +149,7 @@ $used_article_ids = array();
         <!-- Newsletter Section -->
         <section class="bg-gaming-dark-lighter rounded-xl p-6 sm:p-8 text-center">
             <h2 class="text-2xl sm:text-3xl font-bold text-white mb-4">
-                Rejoignez la communauté World of Geeks
+                Rejoignez la communauté WorldofGeek.fr
             </h2>
             <p class="text-gray-400 mb-6 sm:mb-8 max-w-2xl mx-auto text-sm sm:text-base">
                 Recevez les dernières actualités gaming, nos tests exclusifs et nos dossiers tech directement dans votre boîte mail.
@@ -177,6 +176,5 @@ $used_article_ids = array();
         </section>
 
     </div>
-</div>
 
 <?php get_footer(); ?>

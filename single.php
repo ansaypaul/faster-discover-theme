@@ -19,9 +19,19 @@ while (have_posts()) : the_post();
     $author_avatar = get_avatar_url(get_the_author_meta('ID'), array('size' => 48));
     $read_time = ceil(str_word_count(strip_tags(get_the_content())) / 200);
     
-    // Articles récents pour la sidebar (même catégorie)
+    // Articles récents pour la sidebar : priorité au dossier, sinon catégorie
     $latest_posts = array();
-    if (!empty($categories)) {
+    
+    // Vérifier si l'article a un dossier
+    if (function_exists('wog_has_dossier') && function_exists('wog_get_dossier_related_posts')) {
+        $has_dossier = wog_has_dossier($article_id);
+        if ($has_dossier) {
+            $latest_posts = wog_get_dossier_related_posts($article_id, 6);
+        }
+    }
+    
+    // Fallback sur la catégorie si pas de dossier ou pas assez d'articles
+    if (count($latest_posts) < 3 && !empty($categories)) {
         $latest_posts = get_posts(array(
             'posts_per_page' => 6,
             'category' => $categories[0]->term_id,
@@ -31,7 +41,7 @@ while (have_posts()) : the_post();
         ));
     }
     
-    // Fallback : si pas assez d'articles dans la catégorie, prendre les derniers articles
+    // Fallback final : si toujours pas assez, prendre les derniers articles
     if (count($latest_posts) < 3) {
         $latest_posts = get_posts(array(
             'posts_per_page' => 6,
@@ -41,9 +51,19 @@ while (have_posts()) : the_post();
         ));
     }
     
-    // Articles similaires (même catégorie)
+    // Articles similaires : priorité au dossier, sinon fallback catégorie
     $related_articles = array();
-    if (!empty($categories)) {
+    
+    // Vérifier si l'article a un dossier
+    if (function_exists('wog_has_dossier') && function_exists('wog_get_dossier_related_posts')) {
+        $has_dossier = wog_has_dossier($article_id);
+        if ($has_dossier) {
+            $related_articles = wog_get_dossier_related_posts($article_id, 4);
+        }
+    }
+    
+    // Fallback sur la catégorie si pas de dossier ou pas d'articles
+    if (empty($related_articles) && !empty($categories)) {
         $related_articles = get_posts(array(
             'posts_per_page' => 4,
             'category' => $categories[0]->term_id,
@@ -54,8 +74,7 @@ while (have_posts()) : the_post();
     }
 ?>
 
-<div class="min-h-screen bg-gaming-dark">
-    <div class="container mx-auto px-4 py-4">
+<div class="container mx-auto px-4 py-4">
         
         <!-- Breadcrumbs -->
         <?php 
@@ -150,20 +169,25 @@ while (have_posts()) : the_post();
                     </div>
                 </article>
 
+                <!-- Google News Bar -->
+                <?php faster_display_gnews_bar(); ?>
+
                 <!-- Related Articles -->
                 <?php if (!empty($related_articles)) : ?>
-                    <section class="border-t border-gaming-dark-card pt-8">
+                    <section class="border-t border-gaming-dark-card pt-8 mt-12 mb-12">
                         <div class="text-2xl font-bold text-white mb-6">
-                            Articles similaires
+                            Pour aller plus loin
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <?php foreach ($related_articles as $related) : 
+                            <?php foreach ($related_articles as $index => $related) : 
                                 setup_postdata($related);
                                 $related_cats = get_the_category($related->ID);
+                                // Masquer les articles 3 et 4 en mobile (index 2 et 3)
+                                $hide_mobile = ($index >= 2) ? 'hidden lg:block' : '';
                             ?>
                                 <a 
                                     href="<?php echo get_permalink($related); ?>"
-                                    class="group block"
+                                    class="group block <?php echo $hide_mobile; ?>"
                                 >
                                     <article>
                                         <!-- Image -->
@@ -205,6 +229,5 @@ while (have_posts()) : the_post();
             ?>
         </div>
     </div>
-</div>
 
 <?php endwhile; get_footer(); ?>

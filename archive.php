@@ -39,8 +39,7 @@ $latest_posts = get_posts(array(
 ));
 ?>
 
-<div class="min-h-screen bg-gaming-dark">
-    <div class="container mx-auto px-4 py-4">
+<div class="container mx-auto px-4 py-4">
         
         <!-- Breadcrumbs -->
         <?php if (is_category()) : 
@@ -146,6 +145,5 @@ $latest_posts = get_posts(array(
             ?>
         </div>
     </div>
-</div>
 
 <?php get_footer(); ?>

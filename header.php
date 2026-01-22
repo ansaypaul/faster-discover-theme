@@ -1,9 +1,18 @@
 <!DOCTYPE html>
-<html <?php language_attributes(); ?> lang="fr">
+<html <?php language_attributes(); ?>>
 <head>
     <meta charset="<?php bloginfo('charset'); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     
+    <link rel="icon" type="image/png" href="https://worldofgeek.fr/fav/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="https://worldofgeek.fr/fav/favicon.svg" />
+    <link rel="shortcut icon" href="https://worldofgeek.fr/fav/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="https://worldofgeek.fr/fav/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="WorldOfGeek" />
+    <link rel="manifest" href="https://worldofgeek.fr/fav/site.webmanifest" />
+    <meta name="facebook-domain-verification" content="gq10rm5tardk2qehfym6hki2bq2vsz" />
+    <meta name="google-adsense-account" content="ca-pub-4636608115398996">
+
     <!-- Performance: Preload critical assets -->
     <link rel="preload" href="<?php echo get_template_directory_uri(); ?>/assets/images/worldofgeek-logo.svg" as="image" type="image/svg+xml">
     

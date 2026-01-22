@@ -27,9 +27,10 @@ if ($layout === 'hero') : ?>
             $categories = get_the_category();
             if (!empty($categories)) : 
                 $category = $categories[0];
+                $category_color = faster_get_category_color($category->slug);
             ?>
                 <div class="absolute top-4 right-4 z-10">
-                    <span class="font-medium px-3 py-1 rounded-md text-xs sm:text-sm text-white" style="background-color: rgba(59, 130, 246, 0.8);">
+                    <span class="font-medium px-3 py-1 rounded-md text-xs sm:text-sm text-white" style="background-color: <?php echo esc_attr(str_replace('rgb', 'rgba', str_replace(')', ', 0.8)', $category_color))); ?>;">
                         <?php echo esc_html($category->name); ?>
                     </span>
                 </div>
@@ -75,18 +76,19 @@ elseif ($layout === 'side') : ?>
                 $categories = get_the_category();
                 if (!empty($categories)) : 
                     $category = $categories[0];
+                    $category_color = faster_get_category_color($category->slug);
                 ?>
                     <div class="absolute top-1 right-1">
-                        <span class="font-medium px-2 py-0.5 rounded text-[10px] text-white" style="background-color: rgba(59, 130, 246, 0.8);">
+                        <span class="font-medium px-2 py-0.5 rounded text-[10px] text-white" style="background-color: <?php echo esc_attr(str_replace('rgb', 'rgba', str_replace(')', ', 0.8)', $category_color))); ?>;">
                             <?php echo esc_html($category->name); ?>
                         </span>
                     </div>
                 <?php endif; ?>
             </div>
             <div class="p-2 sm:p-3 flex-1 min-w-0 flex flex-col justify-center">
-                <h4 class="text-white text-xs sm:text-sm font-semibold line-clamp-2 group-hover:text-gaming-accent transition-colors">
+                <h3 class="text-white text-xs sm:text-sm font-semibold line-clamp-2 group-hover:text-gaming-accent transition-colors">
                     <?php the_title(); ?>
-                </h4>
+                </h3>
                 <time datetime="<?php echo get_the_date('c'); ?>" class="mt-1 text-xs text-gray-400 block">
                     <?php echo get_the_date('j F Y'); ?>
                 </time>
@@ -114,9 +116,10 @@ else : ?>
             $categories = get_the_category();
             if (!empty($categories)) : 
                 $category = $categories[0];
+                $category_color = faster_get_category_color($category->slug);
             ?>
                 <div class="absolute top-3 right-3 z-10">
-                    <span class="font-medium px-3 py-1 rounded-md text-xs text-white" style="background-color: rgba(59, 130, 246, 0.8);">
+                    <span class="font-medium px-3 py-1 rounded-md text-xs text-white" style="background-color: <?php echo esc_attr(str_replace('rgb', 'rgba', str_replace(')', ', 0.8)', $category_color))); ?>;">
                         <?php echo esc_html($category->name); ?>
                     </span>
                 </div>
