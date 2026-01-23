@@ -235,8 +235,8 @@ $total_pages = $author_posts->max_num_pages;
                         <?php if ($total_pages > 1): 
                             $big = 999999999;
                             $pagination = paginate_links(array(
-                                'base' => str_replace($big, '%#%', esc_url(get_author_posts_url($author_id))),
-                                'format' => 'page/%#%/',
+                                'base' => str_replace($big, '%#%', esc_url(get_pagenum_link($big))),
+                                'format' => '?paged=%#%',
                                 'current' => max(1, $paged),
                                 'total' => $total_pages,
                                 'type' => 'array',
